@@ -23,7 +23,7 @@ public class MainActivity extends Activity {
     layout.setPadding(42, 58, 42, 30);
     layout.setBackgroundColor(0xFF14121D);
     TextView title = new TextView(this);
-    title.setText("LILITH  ·  v0.3"); title.setTextColor(0xFFFF6489); title.setTextSize(29);
+    title.setText("LILITH  ·  v0.4"); title.setTextColor(0xFFFF6489); title.setTextSize(29);
     title.setGravity(Gravity.CENTER);layout.addView(title);
     TextView subtitle=new TextView(this);
     subtitle.setText("Tu asistente personal\nDi: «Oye, Lilith»");
@@ -41,6 +41,8 @@ public class MainActivity extends Activity {
     });
     Button start=new Button(this);start.setText("2. ACTIVAR OYE LILITH");layout.addView(start);
     start.setOnClickListener(v->startListening());
+    Button configure=new Button(this);configure.setText("AJUSTES DE VOZ · PRUEBA");layout.addView(configure);
+    configure.setOnClickListener(v->startActivity(new Intent(this,VoiceSettingsActivity.class)));
     Button stop=new Button(this);stop.setText("DETENER ESCUCHA");layout.addView(stop);
     stop.setOnClickListener(v->{
       startService(new Intent(this,ListenerService.class).setAction(ListenerService.STOP));
@@ -48,7 +50,7 @@ public class MainActivity extends Activity {
     });
     TextView note=new TextView(this);
     note.setText("Lilith detecta la frase con Vosk (español, local). Al despertar, muestra un orbe rojo flotante y contesta con la voz española disponible en el sistema.\n\n"+
-      "Prueba también: «Qué hora es» o «Abre ChatGPT».\n\n"+
+      "Prueba también: «Qué hora es» y luego «Abre Spotify».\n\n"+
       "La escucha requiere un servicio visible y puede detenerse por las restricciones de Android/HyperOS. No es todavía un asistente del sistema ni está garantizado su funcionamiento tras reiniciar o con el teléfono bloqueado. La voz femenina depende de las voces TTS instaladas.");
     note.setTextSize(14);note.setTextColor(0xFFCCC4D1);note.setPadding(0,28,0,0);layout.addView(note);
     setContentView(layout);

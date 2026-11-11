@@ -36,16 +36,11 @@ public class ListenerService extends Service {
     super.onCreate();
     NotificationManager nm=getSystemService(NotificationManager.class);
     nm.createNotificationChannel(new NotificationChannel(CHANNEL,"Lilith · Escucha",NotificationManager.IMPORTANCE_LOW));
+    nm.createNotificationChannel(new NotificationChannel("lilith_launch","Lilith · Confirmar apertura",NotificationManager.IMPORTANCE_HIGH));
     orb=new OrbOverlay(this);
     tts=new TextToSpeech(this, status -> {
       if(status==TextToSpeech.SUCCESS && tts!=null) {
-        tts.setLanguage(new Locale("es","ES"));
-        // Request a likely feminine Spanish voice when present. The system ultimately decides.
-        for(android.speech.tts.Voice v:tts.getVoices()==null?java.util.Collections.<android.speech.tts.Voice>emptySet():tts.getVoices()){
-          String name=v.getName().toLowerCase(Locale.ROOT);
-          if(v.getLocale().getLanguage().equals("es") && (name.contains("female") || name.contains("mujer") || name.contains("femen"))){tts.setVoice(v);break;}
-        }
-        tts.setSpeechRate(1.02f);
+        VoicePrefs.configure(this,tts);
         tts.setOnUtteranceProgressListener(new UtteranceProgressListener(){
           @Override public void onStart(String id) {}
           @Override public void onDone(String id) {speaking=false;mainHandler.post(()->{if(orb!=null)orb.setLabel("Te escucho...");});}
@@ -125,7 +120,8 @@ public class ListenerService extends Service {
       if(!awake && trigger && now-lastTrigger>3500){
         lastTrigger=now;awake=true;awakeUntil=now+14000;
         mainHandler.post(()->orb.show("Despertando..."));
-        speak((responseIndex++%2==0)?"Dime, cariño. Te escucho.":"Aquí estoy, picha. ¿Qué necesitas?");
+        speak(VoicePrefs.personality(this).equals("neutra") ? "Dime, te escucho." :
+          ((responseIndex++%2==0)?"Dime, cariño. Te escucho.":"Aquí estoy, picha. ¿Qué necesitas?"));
         status("Lilith despierta. Puedes hablarle.");
         return;
       }
@@ -136,6 +132,10 @@ public class ListenerService extends Service {
           String hora=new SimpleDateFormat("HH:mm",new Locale("es","ES")).format(new Date());
           mainHandler.post(()->orb.setLabel("Respondiendo..."));
           speak("Son las "+hora.replace(":"," y ")+".");
+        } else if(text.matches(".*\\b(abre|abrir|abre la|abre el)\\b.*") || text.startsWith("abre ")) {
+          String appName=text.replaceFirst("^.*?\\b(?:abre|abrir)\\s+(?:la |el )?","").trim();
+          if(appName.isEmpty()) speak("¿Qué aplicación quieres abrir?");
+          else speak(AppLauncher.offer(this,appName));
         } else if(text.contains("abre chatgpt") || text.contains("abre chat gpt")) {
           speak("Te dejo el acceso preparado.");
           // User tap is required to open apps reliably from the background on recent Android.
@@ -146,6 +146,7 @@ public class ListenerService extends Service {
   }
   private void speak(String text){
     if(tts==null)return;
+    VoicePrefs.configure(this,tts);
     speaking=true;awakeUntil=System.currentTimeMillis()+14000;
     mainHandler.post(()->orb.setLabel("Lilith hablando..."));
     int result=tts.speak(text,TextToSpeech.QUEUE_FLUSH,null,"lilith-"+System.currentTimeMillis());
